@@ -179,9 +179,9 @@ function getData(names){
     pokedex.trainer = {
       name: "Zia",
       pokemon, //an array of all pokemon this trainer has
-      all: () => this.pokemon, //function that returns the array
-      get: (name) => this[name] //function to return a single pokemon by name
     }
+    pokedex.trainer.all = () => pokedex.trainer.pokemon, //function that returns all the trainer's pokemon
+    pokedex.trainer.get = (name) => pokedex.trainer[name] //function to return a single pokemon by name
     for (let p of pokemon){
       //trainer has each pokemon object assosciated with its name as the key
       pokedex.trainer[p.name] = p;
