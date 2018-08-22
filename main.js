@@ -8,6 +8,7 @@ function initializePokedex(){
     title: document.querySelector("#pokedex-title"),
     pokemonName: document.querySelector("#pokemon-name"),
     pokemonImg: document.querySelector("#pokemon-img"),
+    imgSpinner: document.querySelector("#img-spinner"),
     description: document.querySelector("#pokemon-description"),
     types: document.querySelector("#types"),
     weaknesses: document.querySelector("#weaknesses"),
@@ -60,9 +61,11 @@ function initializePokedex(){
   });
   //show the chosen pokemon's data on the page
   pokedex.renderPokemon = function(pokemon){
-    pokedex.pokemonName.innerText = pokemon.name;
-    pokedex.pokemonImg.src = pokemon.image;
-    pokedex.description.innerText = pokemon.description;
+    this.pokemonName.innerText = pokemon.name;
+    //deactivate image spinner
+    this.imgSpinner.style.display = "none";
+    this.pokemonImg.src = pokemon.image;
+    this.description.innerText = pokemon.description;
     
     //function to set list items in a ul
     function renderList(ul, items){

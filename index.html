@@ -12,7 +12,7 @@
 </head>
 <body>
   <header class="row">
-    <nav class="deep-orange accent-3">
+    <nav class="red accent-4">
       <div class="nav-wrapper">
         <a href="#" class="brand-logo title-font flow-text center" id="pokedex-title">Pokedex</a>
       </div>
@@ -37,7 +37,19 @@
         <!-- Pokemon sprite image -->
         <div class="row">
           <div class="col s12 center-align">
-            <img src="http://via.placeholder.com/400x400" id="pokemon-img" class="responsive-img">
+            <!-- Loading spinner -->
+            <div class="preloader-wrapper active" id="img-spinner">
+              <div class="spinner-layer spinner-red-only">
+                <div class="circle-clipper left">
+                  <div class="circle"></div>
+                </div><div class="gap-patch">
+                  <div class="circle"></div>
+                </div><div class="circle-clipper right">
+                  <div class="circle"></div>
+                </div>
+              </div>
+            </div>
+            <img src="" id="pokemon-img" class="responsive-img">
           </div>
         </div>
 
@@ -64,7 +76,7 @@
           <section class="col s12">
             <ul class="collapsible">
               <li class="active" id="types-and-weaknesses">
-                <div class="collapsible-header deep-orange accent-3 title-font white-text"> Types and Weaknesses </div>
+                <div class="collapsible-header red accent-4 title-font white-text"> Types and Weaknesses </div>
                 <div class="collapsible-body red lighten-5">
                   <div class="row">
                     <div class="col s6">
@@ -85,7 +97,7 @@
                 </div>
               </li>
               <li id="physical-stats">
-                <div class="collapsible-header deep-orange accent-3 title-font white-text"> Physical Stats </div>
+                <div class="collapsible-header red accent-4 title-font white-text"> Physical Stats </div>
                 <div class="collapsible-body red lighten-5">
                   <div class="row" id="stat-hp">
                     <div class="col s5 title-font">HP</div>
@@ -126,7 +138,7 @@
                 </div>
               </li>
               <li id="other-stats">
-                <div class="collapsible-header deep-orange accent-3 title-font white-text"> Other Stats </div>
+                <div class="collapsible-header red accent-4 title-font white-text"> Other Stats </div>
                 <div class="collapsible-body">
                   <div class="row">
                     <div class="col offset-s1 s4">
