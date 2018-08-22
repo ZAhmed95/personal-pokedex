@@ -72,7 +72,7 @@ function initializePokedex(){
     //update types list
     renderList(pokedex.types, pokemon.types);
     //update weaknesses list (Not yet implemented)
-    // renderList(pokedex.weaknesses, pokemon.weaknesses);
+    renderList(pokedex.weaknesses, pokemon.weaknesses);
     //update abilities list
     renderList(pokedex.abilities, pokemon.abilities);
 
@@ -117,6 +117,12 @@ class Pokemon {
     this.height = height;
     this.weight = weight;
     this.abilities = abilities;
+    this.weaknesses = [];
+    //tell typesManager to create weaknesses list for this pokemon,
+    //when typesManager is ready
+    typesManager.onReady(() => {
+      this.weaknesses = typesManager.createWeaknessesList(this.types);
+    });
   }
 }
 
@@ -125,10 +131,6 @@ const instance = axios.create({
   baseURL: "https://pokeapi.co/api/v2/"
 });
 const names = ["articuno", "zapdos", "moltres"]
-
-function getPokemonInfo(name){
-  return instance.get(name);
-}
 
 //make api calls
 getData(names);
@@ -152,7 +154,6 @@ function getData(names){
         name,
         sprites: {front_default: image},
         types,
-        weaknesses = ["not implemented yet"],
         stats: [
           {base_stat: speed},
           {base_stat: spDef},
@@ -177,7 +178,6 @@ function getData(names){
       //create a new Pokemon object out of the data, and push it into pokemon array
       pokemon.push(new Pokemon({name, image, description,
         types: types.map(elem => elem.type.name),
-        weaknesses,
         stats: {
           speed,
           spDef,
@@ -212,6 +212,11 @@ function getData(names){
         pokedex.title.innerText = `${pokedex.trainer.name}'s Pokedex`;
         //render the first pokemon in the array
         pokedex.renderPokemon(pokemon[0]);
+        //also, when the typesManager is ready, refresh the render to show
+        //weaknesses list
+        typesManager.onReady(() => {
+          pokedex.renderPokemon(pokemon[pokedex.index]);
+        });
       }
       else {
         //otherwise, we're not done retrieving all pokemon data. Get the next pokemon
@@ -220,3 +225,95 @@ function getData(names){
     })); //end axios.then
   }
 }
+
+//closure to create a typesManager object
+const typesManager = (function(){
+  //object to hold type damage relations
+  var typeRelations = {}
+  getTypeRelations();
+  //Get pokemon type damage relations (half damage, double damage, etc)
+  function getTypeRelations(){
+    //there are currently 18 different types
+    for (let i = 1; i <= 18; i++){
+      //make api call to get type info
+      instance.get(`type/${i}/`).then(res => {
+        //create new typeRelation object
+        var typeRelation = {};
+        var damageRelations = res.data.damage_relations;
+        //get all types that do half damage to this type
+        for (let type of damageRelations.half_damage_from){
+          typeRelation[type.name] = 0.5;
+        }
+        //get all types that do no damage to this type
+        for (let type of damageRelations.no_damage_from){
+          typeRelation[type.name] = 0;
+        }
+        //get all types that do double damage to this type
+        for (let type of damageRelations.double_damage_from){
+          typeRelation[type.name] = 2;
+        }
+        //insert this typeRelation into typeRelations
+        typeRelations[res.data.name] = typeRelation;
+
+        //if this was the final typeRelation added, fire ready event
+        if (Object.keys(typeRelations).length == 18){
+          ready();
+        }
+      });
+    }
+  }
+
+  //readyState boolean to indicate if typeRelations has been fully initialized
+  var readyState = false;
+  //list of callbacks to fire when typeRelations is fully initialized
+  var callbacks = [];
+  //function that gets called when typeRelations is ready
+  function ready(){
+    readyState = true;
+    for (let callback of callbacks){
+      callback();
+    }
+    callbacks = [];
+  }
+  //function that receives callbacks to fire when ready
+  function onReady(callback){
+    //if typesManager is already ready, just fire the callback immediately
+    if (readyState) callback();
+    else {
+      //otherwise add the callback to the queue
+      callbacks.push(callback);
+    }
+  }
+  //create a function that returns a list of type vulnerabilities,
+  //given multiple type names
+  function getTypeVulnerabilities(types){
+    var vulnerabilities = {};
+    types.forEach(name => {
+      var typeRelation = typeRelations[name];
+      for (let key in typeRelation){
+        vulnerabilities[key] = (vulnerabilities[key] || 1) * typeRelation[key];
+      }
+    })
+    return vulnerabilities;
+  }
+
+  //converts vulnerabilities object into weaknesses list
+  function createWeaknessesList(types){
+    var vulnerabilities = getTypeVulnerabilities(types);
+    var weaknesses = [];
+    for (let key in vulnerabilities){
+      if (vulnerabilities[key] > 1){
+        //this will create a string like: "flying 2x"
+        weaknesses.push(`${key} ${vulnerabilities[key]}x`);
+      }
+    }
+    return weaknesses;
+  }
+
+  //return a typeManager object
+  return {
+    isReady: () => readyState,
+    onReady,
+    createWeaknessesList
+  }
+})();
