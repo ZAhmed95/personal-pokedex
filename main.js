@@ -1,7 +1,9 @@
 M.AutoInit();
 
-//Initializing the pokedex
-const pokedex = (function(){
+var pokedex; //pokedex object that will be initialized
+
+//Function to initialize the pokedex
+function initializePokedex(){
   var pokedex = {
     title: document.querySelector("#pokedex-title"),
     pokemonName: document.querySelector("#pokemon-name"),
@@ -93,7 +95,7 @@ const pokedex = (function(){
   }
 
   return pokedex;
-})(); //call function to initialize pokedex
+}
 
 //Pokemon class to store information about each pokemon
 class Pokemon {
@@ -120,7 +122,7 @@ class Pokemon {
 
 //set up axios instance
 const instance = axios.create({
-  baseURL: "https://pokeapi.co/api/v2/pokemon/"
+  baseURL: "https://pokeapi.co/api/v2/"
 });
 const names = ["articuno", "zapdos", "moltres"]
 
@@ -132,19 +134,23 @@ function getPokemonInfo(name){
 getData(names);
 
 function getData(names){
-  //make an api call for each pokemon name
-  var promises = names.map(name => instance.get(`${name}/`));
-
+  //make two api calls for each pokemon name
+  var promises = names.map(name => instance.get(`pokemon/${name}/`));
+  var species = names.map(name => instance.get(`pokemon-species/${name}/`));
   //create pokemon array to store data returned by api calls
   var pokemon = [];
 
-  axios.all(promises).then(axios.spread((...responses) => {
-    for (let i=0; i < responses.length; i++){
-      //destructure the response data into our format
+  //get all pokemon data to populate pokemon list
+  createPokemon(0); //this function will call itself with index 1,2... to get all pokemon data
+
+  //define a function to create a new Pokemon object from the retrieved data,
+  //and push it to pokemon array
+  function createPokemon(index){
+    axios.all([promises[index], species[index]]).then(axios.spread((pokemonData, speciesData) => {
+      //destructure the pokemon data into our format
       var {
         name,
         sprites: {front_default: image},
-        description = "not implemented yet",
         types,
         weaknesses = ["not implemented yet"],
         stats: [
@@ -158,7 +164,16 @@ function getData(names){
         height,
         weight,
         abilities,
-      } = responses[i].data;
+      } = pokemonData.data;
+      //destructure the species data
+      var description = "";
+      for (let flavorText of speciesData.data.flavor_text_entries){
+        //get the english flavor text
+        if (flavorText.language.name == "en"){
+          description = flavorText.flavor_text;
+          break;
+        }
+      }
       //create a new Pokemon object out of the data, and push it into pokemon array
       pokemon.push(new Pokemon({name, image, description,
         types: types.map(elem => elem.type.name),
@@ -174,23 +189,34 @@ function getData(names){
         height, weight,
         abilities: abilities.map(elem => elem.ability.name)
       }));
-    }
-    //create trainer object that holds these pokemon
-    pokedex.trainer = {
-      name: "Zia",
-      pokemon, //an array of all pokemon this trainer has
-    }
-    pokedex.trainer.all = () => pokedex.trainer.pokemon, //function that returns all the trainer's pokemon
-    pokedex.trainer.get = (name) => pokedex.trainer[name] //function to return a single pokemon by name
-    for (let p of pokemon){
-      //trainer has each pokemon object assosciated with its name as the key
-      pokedex.trainer[p.name] = p;
-    }
-    //set pokemon count in pokedex
-    pokedex.count = pokemon.length;
-    //set pokedex title
-    pokedex.title.innerText = `${pokedex.trainer.name}'s Pokedex`;
-    //render the first pokemon in the array
-    pokedex.renderPokemon(pokemon[0]);
-  }));
+
+      //if we've just retrieved the data for the last pokemon, create the trainer object,
+      //and initialize the pokedex
+      if (index == promises.length - 1){
+        //Initialize pokedex
+        pokedex = initializePokedex();
+        //create trainer object that holds these pokemon
+        pokedex.trainer = {
+          name: "Zia",
+          pokemon, //an array of all pokemon this trainer has
+        }
+        pokedex.trainer.all = () => pokedex.trainer.pokemon, //function that returns all the trainer's pokemon
+        pokedex.trainer.get = (name) => pokedex.trainer[name] //function to return a single pokemon by name
+        for (let p of pokemon){
+          //trainer has each pokemon object assosciated with its name as the key
+          pokedex.trainer[p.name] = p;
+        }
+        //set pokemon count in pokedex
+        pokedex.count = pokemon.length;
+        //set pokedex title
+        pokedex.title.innerText = `${pokedex.trainer.name}'s Pokedex`;
+        //render the first pokemon in the array
+        pokedex.renderPokemon(pokemon[0]);
+      }
+      else {
+        //otherwise, we're not done retrieving all pokemon data. Get the next pokemon
+        createPokemon(index+1);
+      }
+    })); //end axios.then
+  }
 }
