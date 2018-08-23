@@ -151,7 +151,7 @@ function getData(names){
   //define a function to create a new Pokemon object from the retrieved data,
   //and push it to pokemon array
   function createPokemon(index){
-    axios.all([promises[index], species[index]]).then(axios.spread((pokemonData, speciesData) => {
+    axios.all([promises[index], species[index]]).then(([pokemonData, speciesData]) => {
       //destructure the pokemon data into our format
       var {
         name,
@@ -225,7 +225,7 @@ function getData(names){
         //otherwise, we're not done retrieving all pokemon data. Get the next pokemon
         createPokemon(index+1);
       }
-    })); //end axios.then
+    }); //end axios.then
   }
 }
 
